@@ -94,8 +94,19 @@
 					class="glyphicon glyphicon-stop"></span> Stop</a><br> <br> <a
 					id="play" href="#" class="btn btn-warning"
 					onclick="play(); return false;"><span
-					class="glyphicon glyphicon-play-circle"></span> Play</a>
+					class="glyphicon glyphicon-play-circle"></span> Play</a> <br> <br> 
+					<a
+					id="test" href="#" class="btn btn-warning"
+					onclick="test(); return false;"><span
+					class="glyphicon glyphicon-play-circle"></span> Test</a>
 			</div>
+
+			<div class="col-md-5">
+				<a id="next_question" href="#" class="btn btn-success"
+					onclick="playNextQuestion(); return false;"><span
+					class="glyphicon glyphicon-play"></span> Next</a>
+			</div>
+
 			<div class="col-md-5">
 				<h3>Remote stream</h3>
 				<video id="videoOutput" autoplay width="480px" height="360px"

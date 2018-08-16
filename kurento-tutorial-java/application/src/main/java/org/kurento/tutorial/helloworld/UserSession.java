@@ -29,6 +29,7 @@ import org.kurento.client.WebRtcEndpoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.socket.WebSocketSession;
+import java.text.SimpleDateFormat;
 
 /**
  * User session.
@@ -41,20 +42,44 @@ import org.springframework.web.socket.WebSocketSession;
 public class UserSession {
 
   private final Logger log = LoggerFactory.getLogger(UserSession.class);
-
+  
+  private String RECORDER_FILE_PATH ;
+  private String recorderFileRoot;
+  
+  
   private String id;
   private WebRtcEndpoint webRtcEndpoint;
   private RecorderEndpoint recorderEndpoint;
   private MediaPipeline mediaPipeline;
   private Date stopTimestamp;
+ 
 
   public UserSession(WebSocketSession session) {
     this.id = session.getId();
   }
 
+  public String getRecorderFileRoot() {
+	  
+	  return recorderFileRoot;
+  }
+  
+  public void setRecorderFileRoot(String recorderFileRoot) {
+	  this.recorderFileRoot=recorderFileRoot;
+  }
+  
+  public String getRecorderFilePath() {
+	    return RECORDER_FILE_PATH;
+  }
+  
+  public void setRecorderFilePath(String RECORDER_FILE_PATH) {
+	    this.RECORDER_FILE_PATH=RECORDER_FILE_PATH;
+  }
+  
+  
   public String getId() {
     return id;
   }
+  
 
   public void setId(String id) {
     this.id = id;
