@@ -22,13 +22,11 @@ var webRtcPeer;
 var state;
 var currentQuesNum;
 
+const num_questions=5;
 const NO_CALL = 0;
-const IN_CALL = 1;
-const POST_CALL = 2;
-const DISABLED = 3;
-const IN_PLAY = 4;
-
-const IN_TEST = 5;
+const IN_TEST = 1; //user will be here when they are in loopback part
+const IN_CALL = 2; // User will be here when they are answering the mental state question
+const POST_CALL = 3;
 
 window.onload = function() {
 	console = new Console();
@@ -46,38 +44,34 @@ window.onbeforeunload = function() {
 function setState(nextState) {
 	switch (nextState) {
 	case NO_CALL:
-		$('#start').hide();
 		$('#stop').show();
-		$('#play').hide();
 		$('#next').hide();
 		$('#confirm').hide();
 		$('#refresh').hide();
-		$('#next').hide();
+		$('#quesNum').hide();
+		$('#play').hide();
 		break;
 	case IN_TEST:
 		$('#confirm').show();
 		$('#refresh').show();
 		$('#test').attr('disabled', true);
-	case DISABLED:
-		$('#start').attr('disabled', true);
-		$('#stop').attr('disabled', true);
-		$('#play').attr('disabled', true);
 		break;
 	case IN_CALL:
-		$('#start').attr('disabled', true);
-		$('#stop').attr('disabled', false);
-		$('#play').attr('disabled', true);
+		$('#next').show();
+		$('#confirm').hide();
+		$('#refresh').hide();
+		$('#test').hide();
 		break;
 	case POST_CALL:
-		$('#start').attr('disabled', false);
-		$('#stop').attr('disabled', true);
-		$('#play').attr('disabled', false);
+		$('#stop').hide();
+		$('#next').hide();
+		$('#confirm').hide();
+		$('#refresh').hide();
+		$('#test').hide();
+		$('#play').show();
+		$('#quesNum').show();
 		break;
-	case IN_PLAY:
-		$('#start').attr('disabled', true);
-		$('#stop').attr('disabled', false);
-		$('#play').attr('disabled', true);
-		break;	
+
 	default:
 		onError('Unknown state ' + nextState);
 	return;
@@ -96,6 +90,9 @@ ws.onmessage = function(message) {
 		break;
 	case 'playResponse':
 		playResponse(parsedMessage);
+		break;
+	case 'postResponse':
+		postResponse(parsedMessage);
 		break;
 	case 'playEnd':
 		playEnd();
@@ -157,48 +154,31 @@ function onTest(error, offerSdp) {
 	sendMessage(message);
 }
 
-
-function start() {
-	console.log('Starting video call ...');
-	// Disable start button
-	setState(DISABLED);
-	showSpinner(videoInput, videoOutput);
-	console.log('Creating WebRtcPeer and generating local sdp offer ...');
-
-	var options = {
-			localVideo : videoInput,
-			remoteVideo : videoOutput,
-			mediaConstraints : getConstraints(),
-			onicecandidate : onIceCandidate
-	}
-
-	webRtcPeer = new kurentoUtils.WebRtcPeer.WebRtcPeerSendrecv(options,
-			function(error) {
-		if (error)
-			return console.error(error);
-		webRtcPeer.generateOffer(onOffer);
-	});
+function confirm(){
+	setState(IN_CALL);
+	playNextQuestion();
 }
 
-function onOffer(error, offerSdp) {
-	if (error)
-		return console.error('Error generating the offer');
-	console.info('Invoking SDP offer callback function ' + location.host);
-	var message = {
-			id : 'start',
-			sdpOffer : offerSdp,
-			mode :  $('input[name="mode"]:checked').val()
-	}
-	sendMessage(message);
+function refresh(){
+	window.location.reload(true);
 }
-
 
 function playNextQuestion() {
+	setState(IN_CALL);
 	console.log('play next question ...');
 	currentQuesNum+=1;
+	
+	if (currentQuesNum==num_questions){
+		$('#stop').show();
+	}
+	
+	if (currentQuesNum>num_questions){
+		stop();
+		return;
+	}
+	
+	
 	console.log(currentQuesNum);
-	// Disable start button
-//	setState(DISABLED);
 	showSpinner(videoInput, videoOutput);
 	console.log('Creating WebRtcPeer and generating local sdp offer ...');
 
@@ -246,7 +226,7 @@ function onIceCandidate(candidate) {
 }
 
 function startResponse(message) {
-	setState(IN_CALL);
+	setState(IN_TEST);
 	console.log('SDP answer received from server. Processing ...');
 
 	webRtcPeer.processAnswer(message.sdpAnswer, function(error) {
@@ -256,6 +236,7 @@ function startResponse(message) {
 }
 
 function stop() {
+	
 	var stopMessageId = (state == IN_CALL) ? 'stop' : 'stopPlay';
 	stopMessageId='stopPlay';
 	console.log('Stopping video while in ' + state + '...');
@@ -272,15 +253,14 @@ function stop() {
 	hideSpinner(videoInput, videoOutput);
 }
 
-function play() {
+function playRecordedVideo(){
+		
 	console.log("Starting to play recorded video...");
-
 	// Disable start button
-	setState(DISABLED);
 	showSpinner(videoOutput);
 
-	console.log('Creating WebRtcPeer and generating local sdp offer ...');
-
+	console.log('playing recorded video ...ques num: ');
+	console.log(document.getElementById('quesNum').value);
 	var options = {
 			remoteVideo : videoOutput,
 			mediaConstraints : getConstraints(),
@@ -299,8 +279,11 @@ function onPlayOffer(error, offerSdp) {
 	if (error)
 		return console.error('Error generating the offer');
 	console.info('Invoking SDP offer callback function ' + location.host);
+	quesNum= document.getElementById('quesNum').value;
+	
 	var message = {
 			id : 'play',
+			quesNum : quesNum,
 			sdpOffer : offerSdp
 	}
 	sendMessage(message);
@@ -324,7 +307,15 @@ function getConstraints() {
 
 
 function playResponse(message) {
-	setState(IN_PLAY);
+	setState(IN_CALL);
+	webRtcPeer.processAnswer(message.sdpAnswer, function(error) {
+		if (error)
+			return console.error(error);
+	});
+}
+
+function postResponse(message) {
+	setState(POST_CALL);
 	webRtcPeer.processAnswer(message.sdpAnswer, function(error) {
 		if (error)
 			return console.error(error);
