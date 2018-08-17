@@ -49,41 +49,34 @@
 	</header>
 	<div class="container">
 		<div class="page-header">
-			<h1>Tutorial: WebRTC in loopback with recording</h1>
+			<h1>Human Behavior Study</h1>
 			<p>
-				This application shows a <i>WebRtcEndpoint</i> connected to itself
-				(loopback) where the media sent to server is recorded and then
-				played. Then, the recorded media (stored in the KMS file system) is
-				played again. Thus, in the server-side code of this application we
-				are using two media pipelines <a href="img/pipelines.png"
-					data-toggle="lightbox" data-title="Hello World with Recording"
-					data-footer="The first pipeline performs a WebRTC loopback and the media is stored in the KMS file system. The second media pipeline is used to play the recorded media.">media
-					pipelines</a> (one for the loopback, and the other one the playback).
-				To run this demo follow these steps:
+				You have to answer some questions and we are going to record your video. Please follow the steps below.  
 			</p>
 			<ol>
-				<li>Open this page with a browser compliant with WebRTC anc
-					click on <i>Start</i> button.
-				<li>Grant the access to the camera and microphone. After the
-					SDP negotiation the loopback should start.
-				<li>Click on <i>Stop</i> to finish the communication.
-				<li>Click on <i>Play</i> to replay the recorded media.
+				<li> Press <i>Confirm</i> button if you see yourself on the right window and listen your self over headphone. Otherwise press <i>Refresh</i> button.
+				</li>
+			</ol>
+			<ol>
+				<li> Answer the questions asked by recorded video. 
+				<li> After finishing each answer press <i>Next</i> button and next question will be appeared
+				<li> After finishing last question press <i>Done</i> button
 				</li>
 			</ol>
 		</div>
 		<div class="row">
 			<div class="col-md-12">
 				<input type="radio" name="mode" value="video-and-audio"
-					checked="checked"> Video and audio <input type="radio"
-					name="mode" value="video-only"> Video only <input
-					type="radio" name="mode" value="audio-only"> Audio only
+					checked="checked"> Video and audio
 			</div>
 		</div>
 		<div class="row">
-			<div class="col-md-5">
+			<div class="col-md-2">
 				<h3>Local stream</h3>
-				<video id="videoInput" autoplay width="480px" height="360px"
+				<video id="videoInput" autoplay width="100px" height="80px"
 					poster="img/webrtc.png"></video>
+			</div>
+			<div class="col-md-1">
 			</div>
 			<div class="col-md-2">
 				<a id="start" href="#" class="btn btn-success"
@@ -95,20 +88,30 @@
 					id="play" href="#" class="btn btn-warning"
 					onclick="play(); return false;"><span
 					class="glyphicon glyphicon-play-circle"></span> Play</a> <br> <br> 
-					<a
-					id="test" href="#" class="btn btn-warning"
+					
+					<a id="test" href="#" class="btn btn-warning"
 					onclick="test(); return false;"><span
-					class="glyphicon glyphicon-play-circle"></span> Test</a>
-			</div>
-
-			<div class="col-md-5">
-				<a id="next_question" href="#" class="btn btn-success"
+					class="glyphicon glyphicon-play-circle"></span> Test</a> <br> <br> 
+					
+					<a id="confirm" href="#" class="btn btn-success"
+					onclick="confirm(); return false;"><span
+					class="glyphicon glyphicon-play"></span> Confirm</a> <br> <br> 
+					
+					<a id="refresh" href="#" class="btn btn-danger"
+					onclick="refresh(); return false;"><span
+					class="glyphicon glyphicon-play"></span> Refresh</a> <br> <br> 
+					
+					<a id="next" href="#" class="btn btn-success"
 					onclick="playNextQuestion(); return false;"><span
 					class="glyphicon glyphicon-play"></span> Next</a>
+					
 			</div>
 
-			<div class="col-md-5">
-				<h3>Remote stream</h3>
+			<div class="col-md-1">
+			</div>
+			
+			<div class="col-md-6">
+				<h3>Research Assistant</h3>
 				<video id="videoOutput" autoplay width="480px" height="360px"
 					poster="img/webrtc.png"></video>
 			</div>

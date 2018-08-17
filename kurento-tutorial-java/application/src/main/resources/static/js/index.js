@@ -28,6 +28,8 @@ const POST_CALL = 2;
 const DISABLED = 3;
 const IN_PLAY = 4;
 
+const IN_TEST = 5;
+
 window.onload = function() {
 	console = new Console();
 	console.log('Page loaded ...');
@@ -44,10 +46,18 @@ window.onbeforeunload = function() {
 function setState(nextState) {
 	switch (nextState) {
 	case NO_CALL:
-		$('#start').attr('disabled', false);
-		$('#stop').attr('disabled', true);
-		$('#play').attr('disabled', true);
+		$('#start').hide();
+		$('#stop').show();
+		$('#play').hide();
+		$('#next').hide();
+		$('#confirm').hide();
+		$('#refresh').hide();
+		$('#next').hide();
 		break;
+	case IN_TEST:
+		$('#confirm').show();
+		$('#refresh').show();
+		$('#test').attr('disabled', true);
 	case DISABLED:
 		$('#start').attr('disabled', true);
 		$('#stop').attr('disabled', true);
@@ -116,7 +126,7 @@ function test() {
 	
 	console.log('Testing if loopback is working ...');
 	// Disable start button
-	setState(DISABLED);
+	setState(IN_TEST);
 	showSpinner(videoInput, videoOutput);
 	console.log('Creating WebRtcPeer and generating local sdp offer ...');
 
