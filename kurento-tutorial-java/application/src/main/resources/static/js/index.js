@@ -44,7 +44,10 @@ window.onbeforeunload = function() {
 function setState(nextState) {
 	switch (nextState) {
 	case NO_CALL:
-		$('#stop').show();
+		$('#test_inst').show();
+		$('#confirm_inst').hide()
+		$('#playing_inst').hide()
+		$('#stop').hide();
 		$('#next').hide();
 		$('#confirm').hide();
 		$('#refresh').hide();
@@ -52,14 +55,21 @@ function setState(nextState) {
 		$('#play').hide();
 		break;
 	case IN_TEST:
+		$('#test_inst').hide();
+		$('#confirm_inst').show()
+		$('#playing_inst').hide()
 		$('#confirm').show();
 		$('#refresh').show();
 		$('#test').attr('disabled', true);
+		$('#stop').hide();
 		break;
 	case IN_CALL:
+		$('#test_inst').hide();
+		$('#confirm_inst').hide()
+		$('#playing_inst').show()
 		$('#next').show();
 		$('#confirm').hide();
-		$('#refresh').hide();
+		$('#refresh').show();
 		$('#test').hide();
 		break;
 	case POST_CALL:

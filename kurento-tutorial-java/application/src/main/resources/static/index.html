@@ -24,7 +24,7 @@
 <script src="js/kurento-utils.js"></script>
 <script src="js/index.js"></script>
 
-<title>Kurento Tutorial: Hello World with Recording</title>
+<title>Mental State Study</title>
 </head>
 
 <body>
@@ -49,20 +49,28 @@
 	</header>
 	<div class="container">
 		<div class="page-header">
-			<h1>Human Behavior Study</h1>
-			<p>
-				You have to answer some questions and we are going to record your video. Please follow the steps below.  
-			</p>
-			<ol>
-				<li> Press <i>Confirm</i> button if you see yourself on the right window and listen your self over headphone. Otherwise press <i>Refresh</i> button.
-				</li>
-			</ol>
-			<ol>
-				<li> Answer the questions asked by recorded video. 
-				<li> After finishing each answer press <i>Next</i> button and next question will be appeared
-				<li> After finishing last question press <i>Done</i> button
-				</li>
-			</ol>
+			<h1>Human Behavior Study</h1><br>
+			<div id ="instructions" style="font-size:20px;">
+				<p style="font-size:30px;font-weight:bold;">Instructions:<p>
+				<p>
+					You have to answer some questions and we are going to record your video. Please follow the steps below.  
+				</p>
+				<ol id="test_inst">
+					<li> Press <font color="orange" size="6"><i><b>Test</b></i></font> button to check your connections.
+					</li>
+				</ol>
+				<ol id="confirm_inst">
+					<li> Press <font color="green" size="6"><i><b>Confirm</b></i></font> button if you see yourself on the <b>right window </b> and listen your self over headphone.
+					<li> Otherwise press <font color="red" size="6"><i><b>Refresh</b></i></font> button.
+					</li>
+				</ol>
+				<ol id="playing_inst">
+					<li> Answer the questions asked by recorded video. 
+					<li> After finishing each answer press <font color="green" size="6"><i><b>Next</b></i></font> button and next question will be appeared
+					<!--<li> After finishing last question press <i>Done</i> button -->
+					</li>
+				</ol>
+			</div>
 		</div>
 		<div class="row">
 			<div class="col-md-12">
@@ -72,13 +80,13 @@
 		</div>
 		<div class="row">
 			<div class="col-md-2">
-				<h3>Local stream</h3>
+				<h3>Yourself</h3>
 				<video id="videoInput" autoplay width="100px" height="80px"
 					poster="img/webrtc.png"></video>
 			</div>
 			<div class="col-md-1">
 			</div>
-			<div class="col-md-2">
+			<div class="col-md-2" style="padding-top: 75px;">
 					
 					<a id="test" href="#" class="btn btn-warning"
 					onclick="test(); return false;"><span
