@@ -52,7 +52,16 @@ public class UserSession {
   private RecorderEndpoint recorderEndpoint;
   private MediaPipeline mediaPipeline;
   private Date stopTimestamp;
- 
+  private String decisionVal;
+  private String evidenceNum;
+  
+  public void setEvidenceNum(String evidenceNum) {
+	  this.evidenceNum=evidenceNum;
+  }
+  
+  public String getEvidenceNum() {
+	  return this.evidenceNum;
+  }
 
   public UserSession(WebSocketSession session) {
     this.id = session.getId();
@@ -75,12 +84,14 @@ public class UserSession {
 	    this.RECORDER_FILE_PATH=RECORDER_FILE_PATH;
   }
   
+  public void setDecisionVal(String decisionVal) {
+	  this.decisionVal=decisionVal;  
+  }
   
   public String getId() {
     return id;
   }
   
-
   public void setId(String id) {
     this.id = id;
   }

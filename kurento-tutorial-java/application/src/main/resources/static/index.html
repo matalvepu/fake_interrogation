@@ -78,7 +78,21 @@
 					checked="checked"> Video and audio
 			</div>
 		</div>
-		<div class="row">
+		<div class="row" id="decision_window">
+			<div class="col-md-12">
+				<br>
+				<p style="font-size:20px;">Please select if you want to tell <b>Truth</b> or <b>Lie</b></p><br>
+				<select id="decisionVal">
+						  <option value="true">True</option>
+						  <option value="false">False</option>
+					</select> 
+				<br><br>
+				<a id="decision" href="#" class="btn btn-success"
+					onclick="submitDecision(); return false;"><span
+					class="glyphicon glyphicon-play-circle"></span> Submit</a> <br> <br> 
+			</div>
+		</div>
+		<div class="row" id="main_window">
 			<div class="col-md-2">
 				<h3>Yourself</h3>
 				<video id="videoInput" autoplay width="100px" height="80px"
@@ -87,6 +101,10 @@
 			<div class="col-md-1">
 			</div>
 			<div class="col-md-2" style="padding-top: 75px;">
+					
+					<a id="play_evidence" href="#" class="btn btn-warning"
+					onclick="playEvidence(); return false;"><span
+					class="glyphicon glyphicon-play-circle"></span>Play Evidence </a>
 					
 					<a id="test" href="#" class="btn btn-warning"
 					onclick="test(); return false;"><span
@@ -119,7 +137,7 @@
 					
 					<br> <br>
 					
-					<a id="play" href="#" class="btn btn-success"
+					<a id="playRecordedVideo" href="#" class="btn btn-success"
 					onclick="playRecordedVideo(); return false;"><span
 					class="glyphicon glyphicon-play"></span> Play</a>
 			</div>
@@ -129,6 +147,7 @@
 			
 			<div class="col-md-6">
 				<h3>Research Assistant</h3>
+				<span id="counter"></span>
 				<video id="videoOutput" autoplay width="480px" height="360px"
 					poster="img/webrtc.png"></video>
 			</div>

@@ -21,19 +21,22 @@ var videoOutput;
 var webRtcPeer;
 var state;
 var currentQuesNum;
-
 const num_questions=5;
-const NO_CALL = 0;
-const IN_TEST = 1; //user will be here when they are in loopback part
-const IN_CALL = 2; // User will be here when they are answering the mental state question
-const POST_CALL = 3;
+
+const START=0;
+const IN_TEST=1;
+const SHOW_EVIDENCE=2;
+const PLAYING_EVIDENCE=3;
+const DECISION_STATE=4;
+const INTERROGATION=5;
+const POST_INTERROGATION=6;
 
 window.onload = function() {
 	console = new Console();
 	console.log('Page loaded ...');
 	videoInput = document.getElementById('videoInput');
 	videoOutput = document.getElementById('videoOutput');
-	setState(NO_CALL);
+	setState(START);
 	currentQuesNum=0;
 }
 
@@ -43,45 +46,111 @@ window.onbeforeunload = function() {
 
 function setState(nextState) {
 	switch (nextState) {
-	case NO_CALL:
+	case START:
 		$('#test_inst').show();
-		$('#confirm_inst').hide()
-		$('#playing_inst').hide()
+		$('#test').show();
+		$('#play_evidence').hide();
+		$('#confirm_inst').hide();
+		$('#playing_inst').hide();
 		$('#stop').hide();
 		$('#next').hide();
 		$('#confirm').hide();
 		$('#refresh').hide();
 		$('#quesNum').hide();
-		$('#play').hide();
-		break;
+		$('#playRecordedVideo').hide();
+		$('#main_window').show();
+		$('#decision_window').hide();
+		break;		
 	case IN_TEST:
-		$('#test_inst').hide();
-		$('#confirm_inst').show()
-		$('#playing_inst').hide()
+		$('#test_inst').show();
+		$('#test').attr('disabled', true);
+		$('#play_evidence').hide();
+		$('#confirm_inst').show();
+		$('#playing_inst').hide();
+		$('#stop').hide();
+		$('#next').hide();
 		$('#confirm').show();
 		$('#refresh').show();
-		$('#test').attr('disabled', true);
-		$('#stop').hide();
+		$('#quesNum').hide();
+		$('#playRecordedVideo').hide();
+		$('#main_window').show();
+		$('#decision_window').hide();
 		break;
-	case IN_CALL:
+	case SHOW_EVIDENCE:
 		$('#test_inst').hide();
-		$('#confirm_inst').hide()
-		$('#playing_inst').show()
-		$('#next').show();
-		$('#confirm').hide();
-		$('#refresh').show();
 		$('#test').hide();
-		break;
-	case POST_CALL:
+		$('#play_evidence').show();
+		$('#confirm_inst').hide();
+		$('#playing_inst').hide();
 		$('#stop').hide();
 		$('#next').hide();
 		$('#confirm').hide();
 		$('#refresh').hide();
-		$('#test').hide();
-		$('#play').show();
-		$('#quesNum').show();
+		$('#quesNum').hide();
+		$('#playRecordedVideo').hide();
+		$('#main_window').show();
+		$('#decision_window').hide();
 		break;
-
+	case PLAYING_EVIDENCE:
+		$('#test_inst').hide();
+		$('#test').hide();
+		$('#play_evidence').hide();
+		$('#confirm_inst').hide();
+		$('#playing_inst').hide();
+		$('#stop').hide();
+		$('#next').hide();
+		$('#confirm').hide();
+		$('#refresh').hide();
+		$('#quesNum').hide();
+		$('#playRecordedVideo').hide();
+		$('#main_window').show();
+		$('#decision_window').hide();
+		break;
+	case DECISION_STATE:
+		$('#test_inst').hide();
+		$('#test').hide();
+		$('#play_evidence').hide();
+		$('#confirm_inst').hide();
+		$('#playing_inst').hide();
+		$('#stop').hide();
+		$('#next').hide();
+		$('#confirm').hide();
+		$('#refresh').hide();
+		$('#quesNum').hide();
+		$('#playRecordedVideo').hide();
+		$('#main_window').hide();
+		$('#decision_window').show();
+		break;	
+	case INTERROGATION:
+		$('#test_inst').hide();
+		$('#test').hide();
+		$('#play_evidence').hide();
+		$('#confirm_inst').hide();
+		$('#playing_inst').hide();
+		$('#stop').hide();
+		$('#next').show();
+		$('#confirm').hide();
+		$('#refresh').hide();
+		$('#quesNum').hide();
+		$('#playRecordedVideo').hide();
+		$('#main_window').show();
+		$('#decision_window').hide();
+		break;
+	case POST_INTERROGATION:
+		$('#test_inst').hide();
+		$('#test').hide();
+		$('#play_evidence').hide();
+		$('#confirm_inst').hide();
+		$('#playing_inst').hide();
+		$('#stop').hide();
+		$('#next').hide();
+		$('#confirm').hide();
+		$('#refresh').hide();
+		$('#quesNum').show();
+		$('#playRecordedVideo').show();
+		$('#main_window').show();
+		$('#decision_window').hide();
+		break;
 	default:
 		onError('Unknown state ' + nextState);
 	return;
@@ -89,20 +158,34 @@ function setState(nextState) {
 	state = nextState;
 }
 
+
 ws.onmessage = function(message) {
 	var parsedMessage = JSON.parse(message.data);
 	console.info('Received message: ' + message.data);
 
 	switch (parsedMessage.id) {
-	case 'startResponse':
+	case 'startLoopbackTesting':
+		setState(IN_TEST);
 		startResponse(parsedMessage);
 		console.log('got response from test');
 		break;
 	case 'playResponse':
-		playResponse(parsedMessage);
+		if (state==PLAYING_EVIDENCE){
+			showTimer();
+			window.setTimeout(showDecision, 8000);
+		}
+		printResponse(parsedMessage);
 		break;
 	case 'postResponse':
 		postResponse(parsedMessage);
+		break;
+	case 'decisionResponse':
+		console.log('decision response working'); 
+		setState(INTERROGATION);
+		playNextQuestion();
+		break;
+	case 'evidenceResponse':
+		printResponse(parsedMessage);
 		break;
 	case 'playEnd':
 		playEnd();
@@ -124,13 +207,68 @@ ws.onmessage = function(message) {
 	case 'recording':
 		break;
 	default:
-		setState(NO_CALL);
+		setState(START);
 	onError('Unrecognized message', parsedMessage);
 	}
 }
 
-function test() {
+function showTimer(){
 	
+	var seconds = 8;
+    function tick() {
+        var counter = document.getElementById("counter");
+        seconds--;
+        counter.innerHTML = "0:" + (seconds < 10 ? "0" : "") + String(seconds);
+        if( seconds > 0 ) {
+            setTimeout(tick, 1000);
+        } 
+    }
+    tick();
+}
+
+function showDecision(){
+	console.log('decision state');
+	setState(DECISION_STATE);
+}
+
+
+function submitDecision(){
+	console.log('submit deciison************');
+	var options = {
+			localVideo : videoInput,
+			remoteVideo : videoOutput,
+			mediaConstraints : getConstraints(),
+			onicecandidate : onIceCandidate
+	}
+
+	webRtcPeer = new kurentoUtils.WebRtcPeer.WebRtcPeerSendrecv(options,
+			function(error) {
+		if (error)
+			return console.error(error);
+		webRtcPeer.generateOffer(onDecision);
+	});
+	
+}
+
+
+function onDecision(error, offerSdp) {
+	if (error)
+		return console.error('Error generating the offer');
+	console.info('Invoking SDP offer callback function ' + location.host);
+	decisionVal= document.getElementById('decisionVal').value;
+	console.info('decision Val ' + decisionVal);
+	
+	var message = {
+			id : 'submittedDecision',
+			decisionVal : decisionVal,
+			sdpOffer : offerSdp
+	}
+	sendMessage(message);
+}
+
+
+
+function test() {	
 	console.log('Testing if loopback is working ...');
 	// Disable start button
 	setState(IN_TEST);
@@ -150,6 +288,7 @@ function test() {
 			return console.error(error);
 		webRtcPeer.generateOffer(onTest);
 	});
+	
 }
 
 function onTest(error, offerSdp) {
@@ -165,28 +304,61 @@ function onTest(error, offerSdp) {
 }
 
 function confirm(){
-	setState(IN_CALL);
-	playNextQuestion();
+	setState(SHOW_EVIDENCE);
+	hideSpinner(videoInput,videoOutput);
 }
+
+function playEvidence(){
+	
+	console.log("Starting to play evidence...");
+	showSpinner(videoOutput);
+	
+	console.log('playing evidence: ');
+	setState(PLAYING_EVIDENCE);
+
+	var options = {
+			remoteVideo : videoOutput,
+			mediaConstraints : getConstraints(),
+			onicecandidate : onIceCandidate
+	}
+
+	webRtcPeer = new kurentoUtils.WebRtcPeer.WebRtcPeerRecvonly(options,
+			function(error) {
+		if (error)
+			return console.error(error);
+		webRtcPeer.generateOffer(onEvidenceOffer);
+	});
+}
+
+
+function onEvidenceOffer(error, offerSdp) {
+	if (error)
+		return console.error('Error generating the offer');
+	console.info('Invoking SDP offer callback function ' + location.host);
+	var evidenceNum=2;
+	
+	var message = {
+			id : 'playEvidence',
+			evidenceNum : evidenceNum,
+			sdpOffer : offerSdp
+	}
+	sendMessage(message);
+}
+
 
 function refresh(){
 	window.location.reload(true);
 }
 
 function playNextQuestion() {
-	setState(IN_CALL);
 	console.log('play next question ...');
 	currentQuesNum+=1;
 	
-	if (currentQuesNum==num_questions){
-		$('#stop').show();
-	}
-	
 	if (currentQuesNum>num_questions){
-		stop();
+		setState(POST_INTERROGATION);
+		showSpinner(videoInput, videoOutput);
 		return;
 	}
-	
 	
 	console.log(currentQuesNum);
 	showSpinner(videoInput, videoOutput);
@@ -197,6 +369,7 @@ function playNextQuestion() {
 			remoteVideo : videoOutput,
 			mediaConstraints : getConstraints(),
 			onicecandidate : onIceCandidate
+			
 	}
 
 	webRtcPeer = new kurentoUtils.WebRtcPeer.WebRtcPeerSendrecv(options,
@@ -211,14 +384,15 @@ function playNextQuestion() {
 function onNextQuestion(error, offerSdp) {
 	if (error)
 		return console.error('Error generating the offer');
-	console.info('Invoking SDP offer callback function ' + location.host);
+	console.log('insidenext question: Invoking SDP offer callback function ' + location.host);
 	var message = {
-			id : 'nextQuestion',
-			sdpOffer : offerSdp,
+			id : 'nextQuestion',			
 			quesNum : currentQuesNum,
+			sdpOffer : offerSdp,
 			mode :  $('input[name="mode"]:checked').val()
 	}
 	sendMessage(message);
+	console.log('After sending message of nextQuestion ' );
 }
 
 function onError(error) {
@@ -236,9 +410,7 @@ function onIceCandidate(candidate) {
 }
 
 function startResponse(message) {
-	setState(IN_TEST);
 	console.log('SDP answer received from server. Processing ...');
-
 	webRtcPeer.processAnswer(message.sdpAnswer, function(error) {
 		if (error)
 			return console.error(error);
@@ -292,7 +464,7 @@ function onPlayOffer(error, offerSdp) {
 	quesNum= document.getElementById('quesNum').value;
 	
 	var message = {
-			id : 'play',
+			id : 'playRecordedVideo',
 			quesNum : quesNum,
 			sdpOffer : offerSdp
 	}
@@ -315,9 +487,15 @@ function getConstraints() {
 	return constraints;
 }
 
+function printResponse(message) {
+	webRtcPeer.processAnswer(message.sdpAnswer, function(error) {
+		if (error)
+			return console.error(error);
+	});
+}
+
 
 function playResponse(message) {
-	setState(IN_CALL);
 	webRtcPeer.processAnswer(message.sdpAnswer, function(error) {
 		if (error)
 			return console.error(error);
@@ -333,7 +511,12 @@ function postResponse(message) {
 }
 
 function playEnd() {
-	setState(POST_CALL);
+	if (state==PLAYING_EVIDENCE){
+		setState(IN_CALL);
+	}else{
+		setState(POST_CALL);
+	}
+	
 	hideSpinner(videoInput, videoOutput);
 }
 

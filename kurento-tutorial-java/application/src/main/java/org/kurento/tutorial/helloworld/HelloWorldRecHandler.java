@@ -78,7 +78,7 @@ public class HelloWorldRecHandler extends TextWebSocketHandler {
   public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
     JsonObject jsonMessage = gson.fromJson(message.getPayload(), JsonObject.class);
     
-    log.debug("Incoming message: {}", jsonMessage);
+    log.info("Incoming message id: {}", jsonMessage.get("id").getAsString());
 
     UserSession user = registry.getBySession(session);
        
@@ -88,17 +88,16 @@ public class HelloWorldRecHandler extends TextWebSocketHandler {
       log.debug("Incoming message from new user: {}", jsonMessage);
     }
 
-    switch (jsonMessage.get("id").getAsString()) {
+    switch (jsonMessage.get("id").getAsString()) {   
       case "test":
     	test(session,jsonMessage);
     	break;
       case "nextQuestion":
+    	log.info("got the request of nextQuestion before user checking");
     	if (user!=null) {
-    		user.stop();
-    		user.release();
+    		log.info("got the request of nextQuestion");
     		playNextQuestion(session,jsonMessage);
-    	}
-    	
+    	}    	
     	break;
       case "stop":
         if (user != null) {
@@ -110,8 +109,20 @@ public class HelloWorldRecHandler extends TextWebSocketHandler {
           user.release();
         }
         break;
-        
-      case "play":
+      case "submittedDecision": 
+    	  if (user!=null) {
+//    		  user.release();
+    		  storeDecision(session,jsonMessage);
+    	  }
+    	  break;
+      case "playEvidence":
+    	  if (user!=null) {
+//    		user.release();
+      		playEvidence(session, jsonMessage);
+      	 }
+		  break;
+          
+      case "playRecordedVideo":
         playRecordedVideo(session, jsonMessage);
         break;
         
@@ -139,6 +150,117 @@ public class HelloWorldRecHandler extends TextWebSocketHandler {
   }
   
   
+  private void playEvidence(final WebSocketSession session, JsonObject jsonMessage) {
+	  try {
+		  UserSession user = registry.getBySession(session);	  
+		  String recorderFileRoot, recorderFilePath;		  
+		  String evidenceNum= jsonMessage.get("evidenceNum").getAsString();
+		  log.info("Evidence Num: '{}'", evidenceNum);
+		  recorderFilePath = "file:///tmp/evidence_"+evidenceNum+".webm";		
+		  log.info("recorder file path : '{}'", recorderFilePath);
+		  play(session,jsonMessage,recorderFilePath);
+		  user.setEvidenceNum(evidenceNum);
+	  }catch (Throwable t) {
+	      log.error("Play evidence error", t);
+	      sendError(session, t.getMessage());
+	    }
+	 	  
+  }
+  
+  private void storeDecision(final WebSocketSession session, JsonObject jsonMessage) {
+	  try {
+		  UserSession user = registry.getBySession(session);	  	  
+		  String decisionVal= jsonMessage.get("decisionVal").getAsString();
+		  user.setDecisionVal(decisionVal);
+		  log.info("Decision Val : '{}'", decisionVal);
+		  
+		  JsonObject response = new JsonObject();
+		  response.addProperty("id", "decisionResponse");
+		  response.addProperty("response", "stored decision");		  
+		  
+		  log.debug("Sending message of decision respone {}", response);
+		  session.sendMessage(new TextMessage(response.toString()));
+		  log.info("Sent the decision respone");
+		  
+	  }catch (Throwable t) {
+	      log.error("Decision  error", t);
+	      sendError(session, t.getMessage());
+	    }
+	 	  
+  }
+  
+  private void play(final WebSocketSession session, JsonObject jsonMessage, String recorderFilePath) {
+	  try {
+	      
+	      UserSession user = registry.getBySession(session);	  
+	      // 1. Media logic
+	      final MediaPipeline pipeline = kurento.createMediaPipeline();
+	      WebRtcEndpoint webRtcEndpoint = new WebRtcEndpoint.Builder(pipeline).build();
+	      PlayerEndpoint player = new PlayerEndpoint.Builder(pipeline, recorderFilePath).build();
+	      player.connect(webRtcEndpoint);
+
+	      // Player listeners
+	      player.addErrorListener(new EventListener<ErrorEvent>() {
+	        @Override
+	        public void onEvent(ErrorEvent event) {
+	          log.info("ErrorEvent for session '{}': {}", session.getId(), event.getDescription());
+//	          sendPlayEnd(session, pipeline);
+	        }
+	      });
+	      player.addEndOfStreamListener(new EventListener<EndOfStreamEvent>() {
+	        @Override
+	        public void onEvent(EndOfStreamEvent event) {
+	          log.info("EndOfStreamEvent for session '{}'", session.getId());
+//	          sendPlayEnd(session, pipeline);
+	        }
+	      });
+
+	      // 2. Store user session
+	      user.setMediaPipeline(pipeline);
+	      user.setWebRtcEndpoint(webRtcEndpoint);
+	      // 3. SDP negotiation
+	      String sdpOffer = jsonMessage.get("sdpOffer").getAsString();
+//	      log.info("play  sdp answer : {}", sdpOffer);
+	      String sdpAnswer = webRtcEndpoint.processOffer(sdpOffer);
+
+	     
+	      // 4. Gather ICE candidates
+	      webRtcEndpoint.addIceCandidateFoundListener(new EventListener<IceCandidateFoundEvent>() {
+
+	        @Override
+	        public void onEvent(IceCandidateFoundEvent event) {
+	          JsonObject response = new JsonObject();
+	          response.addProperty("id", "iceCandidate");
+	          response.add("candidate", JsonUtils.toJsonObject(event.getCandidate()));
+	          try {
+	            synchronized (session) {
+	              session.sendMessage(new TextMessage(response.toString()));
+	            }
+	          } catch (IOException e) {
+	            log.error(e.getMessage());
+	          }
+	        }
+	      });
+
+	      // 5. Play recorded stream
+	      player.play();
+	      
+	      JsonObject response = new JsonObject();
+	      response.addProperty("id", "playResponse");
+	      response.addProperty("sdpAnswer", sdpAnswer);
+	     
+
+	      synchronized (session) {
+	        session.sendMessage(new TextMessage(response.toString()));
+	      }
+
+	      webRtcEndpoint.gatherCandidates();
+	    } catch (Throwable t) {
+	      log.error("Play error", t);
+	      sendError(session, t.getMessage());
+	    }  
+	
+  }
   
   private void playNextQuestion(final WebSocketSession session, JsonObject jsonMessage) {
 
@@ -147,6 +269,13 @@ public class HelloWorldRecHandler extends TextWebSocketHandler {
 	      
 		  UserSession user = registry.getBySession(session);
 		  String questionNum=jsonMessage.get("quesNum").getAsString();
+		  
+		  if (questionNum=="1") {
+	          user.release();
+		  }else {
+			  user.stop();
+	          user.release();
+		  }
 		  
 		  String recorderFileRoot = user.getRecorderFileRoot();
 		  String recorderFilePath = recorderFileRoot+"_"+questionNum+".webm";
@@ -177,39 +306,6 @@ public class HelloWorldRecHandler extends TextWebSocketHandler {
 
 	      });
 
-	      recorder.addStoppedListener(new EventListener<StoppedEvent>() {
-
-	        @Override
-	        public void onEvent(StoppedEvent event) {
-	          JsonObject response = new JsonObject();
-	          response.addProperty("id", "stopped");
-	          try {
-	            synchronized (session) {
-	              session.sendMessage(new TextMessage(response.toString()));
-	            }
-	          } catch (IOException e) {
-	            log.error(e.getMessage());
-	          }
-	        }
-
-	      });
-
-	      recorder.addPausedListener(new EventListener<PausedEvent>() {
-
-	        @Override
-	        public void onEvent(PausedEvent event) {
-	          JsonObject response = new JsonObject();
-	          response.addProperty("id", "paused");
-	          try {
-	            synchronized (session) {
-	              session.sendMessage(new TextMessage(response.toString()));
-	            }
-	          } catch (IOException e) {
-	            log.error(e.getMessage());
-	          }
-	        }
-
-	      });
 
 	      connectAccordingToProfile(webRtcEndpoint, recorder, profile);
 	      
@@ -289,9 +385,7 @@ public class HelloWorldRecHandler extends TextWebSocketHandler {
   
   private void test(final WebSocketSession session, JsonObject jsonMessage) {
 	    try {	    	            
-	      
-	 
-		  
+	      	 		  
 		  String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 	      String recorderFileRoot = "file:///tmp/mental_state_"+timeStamp;
 	      
@@ -323,43 +417,9 @@ public class HelloWorldRecHandler extends TextWebSocketHandler {
 
 	      });
 
-	      recorder.addStoppedListener(new EventListener<StoppedEvent>() {
-
-	        @Override
-	        public void onEvent(StoppedEvent event) {
-	          JsonObject response = new JsonObject();
-	          response.addProperty("id", "stopped");
-	          try {
-	            synchronized (session) {
-	              session.sendMessage(new TextMessage(response.toString()));
-	            }
-	          } catch (IOException e) {
-	            log.error(e.getMessage());
-	          }
-	        }
-
-	      });
-
-	      recorder.addPausedListener(new EventListener<PausedEvent>() {
-
-	        @Override
-	        public void onEvent(PausedEvent event) {
-	          JsonObject response = new JsonObject();
-	          response.addProperty("id", "paused");
-	          try {
-	            synchronized (session) {
-	              session.sendMessage(new TextMessage(response.toString()));
-	            }
-	          } catch (IOException e) {
-	            log.error(e.getMessage());
-	          }
-	        }
-
-	      });
-
 	      connectAccordingToProfile(webRtcEndpoint, recorder, profile);
 	      
-	      // 2. Store user session
+	      // 2. Creating user profile
 	      UserSession user = new UserSession(session);
 	      user.setMediaPipeline(pipeline);
 	      user.setWebRtcEndpoint(webRtcEndpoint);
@@ -390,7 +450,7 @@ public class HelloWorldRecHandler extends TextWebSocketHandler {
 	      });
 
 	      JsonObject response = new JsonObject();
-	      response.addProperty("id", "startResponse");
+	      response.addProperty("id", "startLoopbackTesting");
 	      response.addProperty("sdpAnswer", sdpAnswer);
 
 	      synchronized (user) {
@@ -446,74 +506,24 @@ public class HelloWorldRecHandler extends TextWebSocketHandler {
   private void playRecordedVideo(final WebSocketSession session, JsonObject jsonMessage) {
     try {
       
-      UserSession user = registry.getBySession(session);
-	  String questionNum=jsonMessage.get("quesNum").getAsString();
+      UserSession user = registry.getBySession(session);	  
+	  String recorderFileRoot, recorderFilePath;
 	  
-	  String recorderFileRoot = user.getRecorderFileRoot();
-	  String recorderFilePath = recorderFileRoot+"_"+questionNum+".webm";
-      // 1. Media logic
-      final MediaPipeline pipeline = kurento.createMediaPipeline();
-      WebRtcEndpoint webRtcEndpoint = new WebRtcEndpoint.Builder(pipeline).build();
-      PlayerEndpoint player = new PlayerEndpoint.Builder(pipeline, recorderFilePath).build();
-      player.connect(webRtcEndpoint);
-
-      // Player listeners
-      player.addErrorListener(new EventListener<ErrorEvent>() {
-        @Override
-        public void onEvent(ErrorEvent event) {
-          log.info("ErrorEvent for session '{}': {}", session.getId(), event.getDescription());
-//          sendPlayEnd(session, pipeline);
-        }
-      });
-      player.addEndOfStreamListener(new EventListener<EndOfStreamEvent>() {
-        @Override
-        public void onEvent(EndOfStreamEvent event) {
-          log.info("EndOfStreamEvent for session '{}'", session.getId());
-//          sendPlayEnd(session, pipeline);
-        }
-      });
-
-      // 2. Store user session
-      user.setMediaPipeline(pipeline);
-      user.setWebRtcEndpoint(webRtcEndpoint);
-      // 3. SDP negotiation
-      String sdpOffer = jsonMessage.get("sdpOffer").getAsString();
-      String sdpAnswer = webRtcEndpoint.processOffer(sdpOffer);
-
-      JsonObject response = new JsonObject();
-      response.addProperty("id", "playResponse");
-      response.addProperty("sdpAnswer", sdpAnswer);
-
-      // 4. Gather ICE candidates
-      webRtcEndpoint.addIceCandidateFoundListener(new EventListener<IceCandidateFoundEvent>() {
-
-        @Override
-        public void onEvent(IceCandidateFoundEvent event) {
-          JsonObject response = new JsonObject();
-          response.addProperty("id", "iceCandidate");
-          response.add("candidate", JsonUtils.toJsonObject(event.getCandidate()));
-          try {
-            synchronized (session) {
-              session.sendMessage(new TextMessage(response.toString()));
-            }
-          } catch (IOException e) {
-            log.error(e.getMessage());
-          }
-        }
-      });
-
-      // 5. Play recorded stream
-      player.play();
-
-      synchronized (session) {
-        session.sendMessage(new TextMessage(response.toString()));
-      }
-
-      webRtcEndpoint.gatherCandidates();
-    } catch (Throwable t) {
-      log.error("Play error", t);
-      sendError(session, t.getMessage());
-    }
+	  if (jsonMessage.has("quesNum")) {	  
+		  String questionNum=jsonMessage.get("quesNum").getAsString();
+		  recorderFileRoot = user.getRecorderFileRoot();
+		  recorderFilePath = recorderFileRoot+"_"+questionNum+".webm";
+	  }else {
+		  String evidenceNum= jsonMessage.get("evidenceNum").getAsString();
+		  recorderFilePath = "file:///tmp/evidence_"+evidenceNum+".webm";
+	  }
+	  play(session,jsonMessage,recorderFilePath);
+	  
+    }catch (Throwable t) {
+	      log.error("Play evidence error", t);
+	      sendError(session, t.getMessage());
+	  }
+     
   }
 
   public void sendPlayEnd(WebSocketSession session, MediaPipeline pipeline) {
