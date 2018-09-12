@@ -21,7 +21,7 @@ var videoOutput;
 var webRtcPeer;
 var state;
 var currentQuesNum;
-const num_questions=5;
+const num_questions=3;
 
 const START=0;
 const IN_TEST=1;
@@ -52,6 +52,8 @@ function setState(nextState) {
 		$('#play_evidence').hide();
 		$('#confirm_inst').hide();
 		$('#playing_inst').hide();
+		$('#evidence_inst').hide();
+		$('#evidence_text').hide();
 		$('#stop').hide();
 		$('#next').hide();
 		$('#confirm').hide();
@@ -60,13 +62,15 @@ function setState(nextState) {
 		$('#playRecordedVideo').hide();
 		$('#main_window').show();
 		$('#decision_window').hide();
+		$('#counter').hide();
 		break;		
 	case IN_TEST:
-		$('#test_inst').show();
+		$('#test_inst').hide();
 		$('#test').attr('disabled', true);
 		$('#play_evidence').hide();
 		$('#confirm_inst').show();
 		$('#playing_inst').hide();
+		$('#evidence_inst').hide();
 		$('#stop').hide();
 		$('#next').hide();
 		$('#confirm').show();
@@ -75,6 +79,7 @@ function setState(nextState) {
 		$('#playRecordedVideo').hide();
 		$('#main_window').show();
 		$('#decision_window').hide();
+		$('#counter').hide();
 		break;
 	case SHOW_EVIDENCE:
 		$('#test_inst').hide();
@@ -82,6 +87,7 @@ function setState(nextState) {
 		$('#play_evidence').show();
 		$('#confirm_inst').hide();
 		$('#playing_inst').hide();
+		$('#evidence_inst').show();
 		$('#stop').hide();
 		$('#next').hide();
 		$('#confirm').hide();
@@ -90,6 +96,7 @@ function setState(nextState) {
 		$('#playRecordedVideo').hide();
 		$('#main_window').show();
 		$('#decision_window').hide();
+		$('#counter').hide();
 		break;
 	case PLAYING_EVIDENCE:
 		$('#test_inst').hide();
@@ -97,6 +104,9 @@ function setState(nextState) {
 		$('#play_evidence').hide();
 		$('#confirm_inst').hide();
 		$('#playing_inst').hide();
+		$('#evidence_inst').show();
+		$('#evidence_text').show();
+		$('#assistant_text').hide();
 		$('#stop').hide();
 		$('#next').hide();
 		$('#confirm').hide();
@@ -105,6 +115,7 @@ function setState(nextState) {
 		$('#playRecordedVideo').hide();
 		$('#main_window').show();
 		$('#decision_window').hide();
+		$('#counter').show();
 		break;
 	case DECISION_STATE:
 		$('#test_inst').hide();
@@ -112,6 +123,9 @@ function setState(nextState) {
 		$('#play_evidence').hide();
 		$('#confirm_inst').hide();
 		$('#playing_inst').hide();
+		$('#evidence_inst').hide();
+		$('#evidence_text').hide();
+		$('#assistant_text').show();
 		$('#stop').hide();
 		$('#next').hide();
 		$('#confirm').hide();
@@ -120,13 +134,15 @@ function setState(nextState) {
 		$('#playRecordedVideo').hide();
 		$('#main_window').hide();
 		$('#decision_window').show();
+		$('#counter').hide();
 		break;	
 	case INTERROGATION:
 		$('#test_inst').hide();
 		$('#test').hide();
 		$('#play_evidence').hide();
 		$('#confirm_inst').hide();
-		$('#playing_inst').hide();
+		$('#playing_inst').show();
+		$('#evidence_inst').hide();
 		$('#stop').hide();
 		$('#next').show();
 		$('#confirm').hide();
@@ -135,6 +151,7 @@ function setState(nextState) {
 		$('#playRecordedVideo').hide();
 		$('#main_window').show();
 		$('#decision_window').hide();
+		$('#counter').hide();
 		break;
 	case POST_INTERROGATION:
 		$('#test_inst').hide();
@@ -142,6 +159,7 @@ function setState(nextState) {
 		$('#play_evidence').hide();
 		$('#confirm_inst').hide();
 		$('#playing_inst').hide();
+		$('#evidence_inst').hide();
 		$('#stop').hide();
 		$('#next').hide();
 		$('#confirm').hide();
@@ -150,6 +168,7 @@ function setState(nextState) {
 		$('#playRecordedVideo').show();
 		$('#main_window').show();
 		$('#decision_window').hide();
+		$('#counter').hide();
 		break;
 	default:
 		onError('Unknown state ' + nextState);
@@ -172,7 +191,7 @@ ws.onmessage = function(message) {
 	case 'playResponse':
 		if (state==PLAYING_EVIDENCE){
 			showTimer();
-			window.setTimeout(showDecision, 8000);
+			window.setTimeout(showDecision, 15000);
 		}
 		printResponse(parsedMessage);
 		break;
@@ -214,11 +233,11 @@ ws.onmessage = function(message) {
 
 function showTimer(){
 	
-	var seconds = 8;
+	var seconds = 15;
     function tick() {
         var counter = document.getElementById("counter");
         seconds--;
-        counter.innerHTML = "0:" + (seconds < 10 ? "0" : "") + String(seconds);
+        counter.innerHTML = "Time Left -  0:" + (seconds < 10 ? "0" : "") + String(seconds);
         if( seconds > 0 ) {
             setTimeout(tick, 1000);
         } 
@@ -335,7 +354,7 @@ function onEvidenceOffer(error, offerSdp) {
 	if (error)
 		return console.error('Error generating the offer');
 	console.info('Invoking SDP offer callback function ' + location.host);
-	var evidenceNum=2;
+	var evidenceNum=3;
 	
 	var message = {
 			id : 'playEvidence',

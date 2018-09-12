@@ -54,6 +54,17 @@ public class UserSession {
   private Date stopTimestamp;
   private String decisionVal;
   private String evidenceNum;
+  private String sdpOffer;
+  
+  
+  
+  public String getSdpOffer() {
+		return sdpOffer;
+	}
+
+	public void setSdpOffer(String sdpOffer) {
+		this.sdpOffer = sdpOffer;
+	}
   
   public void setEvidenceNum(String evidenceNum) {
 	  this.evidenceNum=evidenceNum;

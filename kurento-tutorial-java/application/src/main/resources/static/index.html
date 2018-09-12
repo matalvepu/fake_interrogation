@@ -53,7 +53,8 @@
 			<div id ="instructions" style="font-size:20px;">
 				<p style="font-size:30px;font-weight:bold;">Instructions:<p>
 				<p>
-					You have to answer some questions and we are going to record your video. Please follow the steps below.  
+					We will show you an event in a video and ask you some questions about it. You have to tell either <b>Truth</b> or <b>Lie</b> about it.
+					You have to make the choice after seeing the event. All the questions will be asked by machine. We are going to record your video. Please follow the steps below.  
 				</p>
 				<ol id="test_inst">
 					<li> Press <font color="orange" size="6"><i><b>Test</b></i></font> button to check your connections.
@@ -64,9 +65,14 @@
 					<li> Otherwise press <font color="red" size="6"><i><b>Refresh</b></i></font> button.
 					</li>
 				</ol>
+				<ol id="evidence_inst">
+					<li> <font color="orange" size="6"><i><b>Play</b></i></font> the evidence video
+					<li> You will get 30 seconds to remember the evidence 
+					</li>
+				</ol>
 				<ol id="playing_inst">
-					<li> Answer the questions asked by recorded video. 
-					<li> After finishing each answer press <font color="green" size="6"><i><b>Next</b></i></font> button and next question will be appeared
+					<li> <font size="6"><i><b>Answer</b></i></font> the questions asked by recorded video. 
+					<li> After finishing the answer press <font color="green" size="6"><i><b>Next Question</b></i></font> button and next question will be appeared
 					<!--<li> After finishing last question press <i>Done</i> button -->
 					</li>
 				</ol>
@@ -79,17 +85,19 @@
 			</div>
 		</div>
 		<div class="row" id="decision_window">
-			<div class="col-md-12">
+			<div class="col-md-12" style="font-size:25px;">
 				<br>
-				<p style="font-size:20px;">Please select if you want to tell <b>Truth</b> or <b>Lie</b></p><br>
-				<select id="decisionVal">
+				<p >Please select if you want to tell <b>Truth</b> or <b>Lie</b> about the incident and submit the choice.</p><br>
+
+				<select id="decisionVal" >
 						  <option value="true">True</option>
 						  <option value="false">False</option>
-					</select> 
+				</select> 
+				
 				<br><br>
 				<a id="decision" href="#" class="btn btn-success"
 					onclick="submitDecision(); return false;"><span
-					class="glyphicon glyphicon-play-circle"></span> Submit</a> <br> <br> 
+					class="glyphicon glyphicon-play-circle"></span> Submit</a> <br> <br> <br>
 			</div>
 		</div>
 		<div class="row" id="main_window">
@@ -116,7 +124,7 @@
 					
 					<a id="next" href="#" class="btn btn-success"
 					onclick="playNextQuestion(); return false;"><span
-					class="glyphicon glyphicon-play"></span> Next</a> <br> <br>
+					class="glyphicon glyphicon-play"></span> Next Question</a> <br> <br>
 					
 					<a id="refresh" href="#" class="btn btn-danger"
 					onclick="refresh(); return false;"><span
@@ -146,15 +154,15 @@
 			</div>
 			
 			<div class="col-md-6">
-				<h3>Research Assistant</h3>
-				<span id="counter"></span>
+				<h3 id="assistant_text">Interrogator</h3>
+				<h3 id="evidence_text">Playing Evidence</h3>
+				<span id="counter" style="font-size:18px;color:red"></span>
 				<video id="videoOutput" autoplay width="480px" height="360px"
 					poster="img/webrtc.png"></video>
 			</div>
 		</div>
 		<div class="row">
 			<div class="col-md-12">
-				<label class="control-label" for="console">Console</label><br>
 				<br>
 				<div id="console" class="democonsole">
 					<ul></ul>

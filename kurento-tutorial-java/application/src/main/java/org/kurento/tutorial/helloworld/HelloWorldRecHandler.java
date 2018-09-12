@@ -63,7 +63,7 @@ public class HelloWorldRecHandler extends TextWebSocketHandler {
   private static final String INTERROGATION_FILE_PATH = "file:///tmp/interrogation.webm";
   private static final String INTERROGATION1_FILE_PATH = "file:///tmp/interrogation1.webm";
   
-  private final String interrogatorFileRoot="file:///tmp/interrogation";
+  private final String interrogatorFileRoot="file:///tmp/fake";
 
   private final Logger log = LoggerFactory.getLogger(HelloWorldRecHandler.class);
   private static final Gson gson = new GsonBuilder().create();
